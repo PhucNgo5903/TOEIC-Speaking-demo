@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import { Mic, StopCircle } from "lucide-react";
 
 function AudioRecorder({ questionId, setResult, setLoading }) {
   const mediaRecorderRef = useRef(null);
@@ -57,14 +58,30 @@ function AudioRecorder({ questionId, setResult, setLoading }) {
   };
 
   return (
-    <div className="recorder">
-      <button onClick={startRecording} disabled={isRecording}>
-        Start Recording
-      </button>
-      <button onClick={stopRecording} disabled={!isRecording}>
-        Stop Recording
-      </button>
-      {isRecording && <p>Recording: {seconds} seconds</p>}
+    <div className="bg-white rounded-md shadow p-4 mb-6 flex flex-col items-center">
+      <div className="flex space-x-4">
+        <button
+          onClick={startRecording}
+          disabled={isRecording}
+          className="bg-green-600 text-white px-4 py-2 rounded-md flex items-center gap-2 hover:bg-green-700 disabled:opacity-50"
+        >
+          <Mic size={20} />
+          Ghi âm
+        </button>
+        <button
+          onClick={stopRecording}
+          disabled={!isRecording}
+          className="bg-red-600 text-white px-4 py-2 rounded-md flex items-center gap-2 hover:bg-red-700 disabled:opacity-50"
+        >
+          <StopCircle size={20} />
+          Dừng lại
+        </button>
+      </div>
+      {isRecording && (
+        <p className="mt-3 text-sm text-gray-600">
+          Đang ghi âm: <span className="font-semibold">{seconds}s</span>
+        </p>
+      )}
     </div>
   );
 }

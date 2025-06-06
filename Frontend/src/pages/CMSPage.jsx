@@ -10,12 +10,12 @@ function CMSPage() {
 
   const handleSave = () => {
     setEditingQuestion(null);
-    setRefreshFlag((f) => !f); // kích hoạt reload danh sách
+    setRefreshFlag((f) => !f);
   };
 
   return (
-    <div>
-      <h1>Quản lý câu hỏi</h1>
+    <div className="max-w-4xl mx-auto space-y-6">
+      <h1 className="text-2xl font-bold">Quản lý câu hỏi Speaking</h1>
       <QuestionForm initialData={editingQuestion} onSave={handleSave} />
       <QuestionList key={refreshFlag} onEdit={handleEdit} />
     </div>

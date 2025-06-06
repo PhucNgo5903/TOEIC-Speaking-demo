@@ -26,15 +26,26 @@ function QuestionForm({ initialData, onSave }) {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <input
-        type="text"
-        placeholder="Nhập câu hỏi"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        required
-      />
-      <button type="submit">{initialData ? "Cập nhật" : "Thêm"}</button>
+    <form onSubmit={handleSubmit} className="bg-white shadow p-4 rounded-md mb-6">
+      <h2 className="text-lg font-semibold mb-3">
+        {initialData ? "Cập nhật câu hỏi" : "Thêm câu hỏi mới"}
+      </h2>
+      <div className="flex gap-4 items-center">
+        <input
+          type="text"
+          placeholder="Nhập câu hỏi..."
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          required
+          className="flex-1 border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+        >
+          {initialData ? "Cập nhật" : "Thêm"}
+        </button>
+      </div>
     </form>
   );
 }
