@@ -55,7 +55,7 @@ app.post("/upload", upload.single("audio"), async (req, res) => {
 
     const topic = question.topic;
 
-    // Upload audio lên AssemblyAI
+    // 1. Upload audio lên AssemblyAI
     const uploadRes = await axios.post(
       "https://api.assemblyai.com/v2/upload",
       audioData,
@@ -66,10 +66,9 @@ app.post("/upload", upload.single("audio"), async (req, res) => {
         },
       }
     );
-
     const audioUrl = uploadRes.data.upload_url;
 
-    // Tạo transcript
+    // 2. Gửi yêu cầu transcript
     const transcriptRes = await axios.post(
       "https://api.assemblyai.com/v2/transcript",
       {
@@ -83,37 +82,49 @@ app.post("/upload", upload.single("audio"), async (req, res) => {
         },
       }
     );
-
     const transcriptId = transcriptRes.data.id;
 
-    // Poll transcript kết quả
-    const pollTranscript = async () => {
-      const pollingRes = await axios.get(
-        `https://api.assemblyai.com/v2/transcript/${transcriptId}`,
-        {
-          headers: {
-            authorization: ASSEMBLY_API_KEY,
-          },
+    // 3. Poll kết quả transcript
+    const getTranscriptText = async () => {
+      const maxAttempts = 10;
+      let attempts = 0;
+
+      while (attempts < maxAttempts) {
+        const pollingRes = await axios.get(
+          `https://api.assemblyai.com/v2/transcript/${transcriptId}`,
+          {
+            headers: {
+              authorization: ASSEMBLY_API_KEY,
+            },
+          }
+        );
+
+        if (pollingRes.data.status === "completed") {
+          fs.unlinkSync(filePath);
+          return pollingRes.data.text;
         }
-      );
 
-      if (pollingRes.data.status === "completed") {
-        fs.unlinkSync(filePath);
-        const transcriptText = pollingRes.data.text;
+        if (pollingRes.data.status === "error") {
+          throw new Error("Transcription failed: " + pollingRes.data.error);
+        }
 
-        const feedback = await getSpeakingFeedback(transcriptText, topic);
-        return res.json({ text: transcriptText, feedback });
-      } else if (pollingRes.data.status === "error") {
-        return res.status(500).json({ error: pollingRes.data.error });
-      } else {
-        setTimeout(pollTranscript, 2000);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        attempts++;
       }
+
+      throw new Error("Transcription timed out");
     };
 
-    pollTranscript();
+    const transcriptText = await getTranscriptText();
+    const feedback = await getSpeakingFeedback(transcriptText, topic);
+
+    return res.json({
+      text: transcriptText,
+      feedback: feedback, // { grammar, contentLogic, fluency }
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Lỗi xử lý audio." });
+    console.error("Upload error:", err);
+    return res.status(500).json({ error: "Lỗi xử lý audio." });
   }
 });
 
