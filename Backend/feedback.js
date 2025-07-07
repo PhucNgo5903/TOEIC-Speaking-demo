@@ -12,9 +12,12 @@ export async function getSpeakingFeedback(transcriptText, topic) {
       Student's script:
       "${transcriptText}"
 
-      Please provide feedback in the following format:
+      Based on this script (converted from speech), please provide feedback in the following format:
       1. Grammar & Vocabulary: [Your comments]
       2. Content Logic: [Your comments]
+      3. Fluency & Pronunciation: [Your comments]
+        (Estimate fluency and pronunciation issues based on pauses, repetition, or unnatural phrasing that might be reflected in the transcript)
+
       Use concise, professional language suitable for TOEIC preparation.
       `;
 
