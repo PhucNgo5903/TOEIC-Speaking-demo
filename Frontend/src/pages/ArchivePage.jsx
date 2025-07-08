@@ -113,21 +113,34 @@ function ArchivePage() {
                 </div>
 
                 {/* Bảng điểm */}
-                <div className="bg-blue-50 p-4 rounded-md shadow-md space-y-3">
-                  <h4 className="text-lg font-bold text-blue-700 mb-2">
-                    Band điểm (IELTS)
+                <div className="bg-blue-50 p-4 rounded-xl shadow-lg space-y-3 border border-blue-200">
+                  <h4 className="text-lg font-bold text-blue-700 mb-2 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" strokeWidth="2"
+                      viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round"
+                        d="M11 17a4 4 0 00.88 2.91l.12.09a4 4 0 005.66-5.66l-.09-.12a4 4 0 00-2.91-.88M13.41 6.59a2 2 0 012.83 0l1.17 1.17a2 2 0 010 2.83L9 20H5v-4L13.41 6.59z" />
+                    </svg>
+                    Band điểm IELTS
                   </h4>
-                  <div className="text-sm space-y-1 text-gray-800">
-                    <p>
-                      <strong>Grammar:</strong> {sub.feedback.grammar?.score} / 9
-                    </p>
-                    <p>
-                      <strong>Content:</strong> {sub.feedback.contentLogic?.score} / 9
-                    </p>
-                    <p>
-                      <strong>Fluency:</strong> {sub.feedback.fluency?.score} / 9
-                    </p>
-                  </div>
+
+                  {[
+                    { label: "Grammar", value: sub.feedback.grammar?.score },
+                    { label: "Content", value: sub.feedback.contentLogic?.score },
+                    { label: "Fluency", value: sub.feedback.fluency?.score },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="space-y-1">
+                      <div className="flex justify-between text-sm font-medium text-gray-700">
+                        <span>{label}</span>
+                        <span>{value} / 9</span>
+                      </div>
+                      <div className="w-full bg-blue-100 rounded-full h-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${(value / 9) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

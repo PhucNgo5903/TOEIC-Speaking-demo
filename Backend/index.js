@@ -12,6 +12,7 @@ import questionRoutes from "./routes/questions.js";
 import submissionRoutes from "./routes/submissions.js";
 import { getSpeakingFeedback } from "./feedback.js";
 import SpeakingSubmission from "./models/SpeakingSubmission.js";
+import Question from "./models/Question.js";
 
 dotenv.config();
 
@@ -36,10 +37,9 @@ db.once("open", () => console.log("Connected to MongoDB"));
 app.use("/api/questions", questionRoutes);
 app.use("/api/submissions", submissionRoutes);
 
+// Multer config
 const upload = multer({ dest: "uploads/" });
 const ASSEMBLY_API_KEY = process.env.ASSEMBLY_API_KEY;
-
-import Question from "./models/Question.js";
 
 app.post("/upload", upload.single("audio"), async (req, res) => {
   try {
@@ -58,7 +58,7 @@ app.post("/upload", upload.single("audio"), async (req, res) => {
 
     const topic = question.topic;
 
-    // 1. Upload audio lên AssemblyAI
+    // Step 1: Upload audio
     const uploadRes = await axios.post(
       "https://api.assemblyai.com/v2/upload",
       audioData,
@@ -71,7 +71,7 @@ app.post("/upload", upload.single("audio"), async (req, res) => {
     );
     const audioUrl = uploadRes.data.upload_url;
 
-    // 2. Gửi yêu cầu transcript
+    // Step 2: Request transcript
     const transcriptRes = await axios.post(
       "https://api.assemblyai.com/v2/transcript",
       {
@@ -87,7 +87,7 @@ app.post("/upload", upload.single("audio"), async (req, res) => {
     );
     const transcriptId = transcriptRes.data.id;
 
-    // 3. Poll kết quả transcript
+    // Step 3: Poll transcript result
     const getTranscriptText = async () => {
       const maxAttempts = 10;
       let attempts = 0;
@@ -102,24 +102,10 @@ app.post("/upload", upload.single("audio"), async (req, res) => {
           }
         );
 
-        // if (pollingRes.data.status === "completed") {
-        //   fs.unlinkSync(filePath);
-        //   return pollingRes.data.text;
-        // }
         if (pollingRes.data.status === "completed") {
-            fs.unlinkSync(filePath);
-            const transcriptText = pollingRes.data.text;
-
-            const feedback = await getSpeakingFeedback(transcriptText, topic);
-
-            // await SpeakingSubmission.create({
-            //   question: questionId,
-            //   transcript: transcriptText,
-            //   feedback,
-            // });
-
-            return res.json({ text: transcriptText, feedback });
-          }
+          fs.unlinkSync(filePath);
+          return pollingRes.data.text;
+        }
 
         if (pollingRes.data.status === "error") {
           throw new Error("Transcription failed: " + pollingRes.data.error);
@@ -135,13 +121,18 @@ app.post("/upload", upload.single("audio"), async (req, res) => {
     const transcriptText = await getTranscriptText();
     const feedback = await getSpeakingFeedback(transcriptText, topic);
 
+    // Optional: Save to MongoDB
+    
+
     return res.json({
       text: transcriptText,
-      feedback: feedback, // { grammar, contentLogic, fluency }
+      feedback,
     });
   } catch (err) {
-    console.error("Upload error:", err);
-    return res.status(500).json({ error: "Lỗi xử lý audio." });
+    console.error("Upload error:", err.message);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Lỗi xử lý audio." });
+    }
   }
 });
 
