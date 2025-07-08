@@ -7,8 +7,9 @@ function PracticePage() {
   const [question, setQuestion] = useState(null);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [selectedQuestionId, setSelectedQuestionId] = useState("");
 
-  // Gọi API khi load lần đầu
   useEffect(() => {
     fetch("http://localhost:5000/api/questions")
       .then((res) => res.json())
@@ -17,24 +18,60 @@ function PracticePage() {
         if (data.length > 0) {
           const randomIndex = Math.floor(Math.random() * data.length);
           setQuestion(data[randomIndex]);
+          setSelectedQuestionId(data[randomIndex]._id);
         }
       });
   }, []);
 
-  // Hàm random lại câu hỏi từ danh sách đã có
   const pickRandomQuestion = () => {
     if (questions.length > 1) {
       let randomIndex;
       let newQuestion;
-
-      // Lặp đến khi chọn được câu hỏi khác câu hiện tại
       do {
         randomIndex = Math.floor(Math.random() * questions.length);
         newQuestion = questions[randomIndex];
       } while (newQuestion._id === question._id);
-
       setQuestion(newQuestion);
-      setResult(null); // Xóa kết quả feedback cũ
+      setSelectedQuestionId(newQuestion._id);
+      setResult(null);
+      setSaved(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/submissions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          question: question._id,
+          transcript: result.text,
+          feedback: result.feedback,
+        }),
+      });
+
+      if (res.ok) {
+        alert("Đã lưu bài nói!");
+        setSaved(true);
+      } else {
+        alert("Lưu thất bại.");
+      }
+    } catch (err) {
+      console.error("Save error:", err);
+      alert("Lỗi khi lưu bài nói.");
+    }
+  };
+
+  const handleSelectQuestion = (e) => {
+    const selectedId = e.target.value;
+    setSelectedQuestionId(selectedId);
+    const found = questions.find((q) => q._id === selectedId);
+    if (found) {
+      setQuestion(found);
+      setResult(null);
+      setSaved(false);
     }
   };
 
@@ -56,10 +93,29 @@ function PracticePage() {
             </button>
           </div>
 
+          {/* Chọn câu hỏi thủ công */}
+          <div className="flex items-center space-x-2">
+            <label className="text-sm text-gray-600">Chọn câu hỏi:</label>
+            <select
+              value={selectedQuestionId}
+              onChange={handleSelectQuestion}
+              className="border border-gray-300 rounded px-3 py-1 text-sm"
+            >
+              {questions.map((q) => (
+                <option key={q._id} value={q._id}>
+                  {q.text}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <AudioRecorder
             topic={question.text}
             questionId={question._id}
-            setResult={setResult}
+            setResult={(res) => {
+              setResult(res);
+              setSaved(false);
+            }}
             setLoading={setLoading}
           />
 
@@ -68,10 +124,23 @@ function PracticePage() {
           )}
 
           {result && (
-            <FeedbackResult
-              transcript={result.text}
-              feedback={result.feedback}
-            />
+            <>
+              <FeedbackResult
+                transcript={result.text}
+                feedback={result.feedback}
+              />
+              <div className="flex justify-end">
+                <button
+                  onClick={handleSave}
+                  disabled={saved}
+                  className={`mt-2 px-4 py-2 rounded text-white ${
+                    saved ? "bg-gray-400" : "bg-green-600 hover:bg-green-700"
+                  }`}
+                >
+                  {saved ? "Đã lưu" : "Lưu bài nói"}
+                </button>
+              </div>
+            </>
           )}
         </div>
       ) : (

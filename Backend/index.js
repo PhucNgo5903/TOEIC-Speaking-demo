@@ -9,7 +9,9 @@ import mongoose from "mongoose";
 import { fileURLToPath } from "url";
 
 import questionRoutes from "./routes/questions.js";
+import submissionRoutes from "./routes/submissions.js";
 import { getSpeakingFeedback } from "./feedback.js";
+import SpeakingSubmission from "./models/SpeakingSubmission.js";
 
 dotenv.config();
 
@@ -32,6 +34,7 @@ db.on("error", (err) => console.error("MongoDB connection error:", err));
 db.once("open", () => console.log("Connected to MongoDB"));
 
 app.use("/api/questions", questionRoutes);
+app.use("/api/submissions", submissionRoutes);
 
 const upload = multer({ dest: "uploads/" });
 const ASSEMBLY_API_KEY = process.env.ASSEMBLY_API_KEY;
@@ -99,10 +102,24 @@ app.post("/upload", upload.single("audio"), async (req, res) => {
           }
         );
 
+        // if (pollingRes.data.status === "completed") {
+        //   fs.unlinkSync(filePath);
+        //   return pollingRes.data.text;
+        // }
         if (pollingRes.data.status === "completed") {
-          fs.unlinkSync(filePath);
-          return pollingRes.data.text;
-        }
+            fs.unlinkSync(filePath);
+            const transcriptText = pollingRes.data.text;
+
+            const feedback = await getSpeakingFeedback(transcriptText, topic);
+
+            // await SpeakingSubmission.create({
+            //   question: questionId,
+            //   transcript: transcriptText,
+            //   feedback,
+            // });
+
+            return res.json({ text: transcriptText, feedback });
+          }
 
         if (pollingRes.data.status === "error") {
           throw new Error("Transcription failed: " + pollingRes.data.error);

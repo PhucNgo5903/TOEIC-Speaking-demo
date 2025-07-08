@@ -6,19 +6,31 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 export async function getSpeakingFeedback(transcriptText, topic) {
   try {
     const prompt = `
-You are a professional TOEIC Speaking evaluator.
+You are a professional TOEIC/IELTS Speaking evaluator.
+
 Topic: ${topic}
 
 Student's script:
 "${transcriptText}"
 
-Based on this script (converted from speech), please provide feedback in the following format:
-1. Grammar & Vocabulary: [Your comments]
-2. Content Logic: [Your comments]
-3. Fluency & Pronunciation: [Your comments]
-(Estimate fluency and pronunciation issues based on pauses, repetition, or unnatural phrasing that might be reflected in the transcript)
+Please analyze the script and return a structured JSON response with feedback and score for each of the following criteria:
 
-Use concise, professional language suitable for TOEIC preparation.
+{
+  "grammar": {
+    "score": [IELTS score from 0 to 9],
+    "comment": "Detailed comment on grammar and vocabulary"
+  },
+  "contentLogic": {
+    "score": [IELTS score from 0 to 9],
+    "comment": "Comment on content logic, task response and relevance"
+  },
+  "fluency": {
+    "score": [IELTS score from 0 to 9],
+    "comment": "Comment on fluency and pronunciation based on transcription patterns (e.g., repetition, hesitation)"
+  }
+}
+
+Respond only in JSON format. No explanations outside JSON.
 `;
 
     const response = await ai.models.generateContent({
@@ -32,24 +44,24 @@ Use concise, professional language suitable for TOEIC preparation.
       throw new Error("No text response from Gemini.");
     }
 
-    // Phân tích kết quả text thành các phần
-    const grammarMatch = rawText.match(/1\.\s*(Grammar & Vocabulary:)?\s*([\s\S]*?)(?=2\.)/i);
-    const contentMatch = rawText.match(/2\.\s*(Content Logic:)?\s*([\s\S]*?)(?=3\.)/i);
-    const fluencyMatch = rawText.match(/3\.\s*(Fluency & Pronunciation:)?\s*([\s\S]*)/i);
+    // Xử lý JSON trả về từ Gemini
+    const jsonStart = rawText.indexOf("{");
+    const jsonEnd = rawText.lastIndexOf("}");
 
-    const feedback = {
-      grammar: grammarMatch ? grammarMatch[2].trim() : "No grammar feedback.",
-      contentLogic: contentMatch ? contentMatch[2].trim() : "No content logic feedback.",
-      fluency: fluencyMatch ? fluencyMatch[2].trim() : "No fluency feedback.",
-    };
+    if (jsonStart === -1 || jsonEnd === -1) {
+      throw new Error("Gemini did not return a valid JSON.");
+    }
 
-    return feedback;
+    const jsonText = rawText.slice(jsonStart, jsonEnd + 1);
+    const parsedFeedback = JSON.parse(jsonText);
+
+    return parsedFeedback;
   } catch (error) {
     console.error("Gemini feedback error:", error);
     return {
-      grammar: "Could not get feedback at this time.",
-      contentLogic: "Could not get feedback at this time.",
-      fluency: "Could not get feedback at this time.",
+      grammar: { score: 0, comment: "Could not get grammar feedback." },
+      contentLogic: { score: 0, comment: "Could not get content feedback." },
+      fluency: { score: 0, comment: "Could not get fluency feedback." },
     };
   }
 }
