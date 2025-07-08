@@ -13,7 +13,7 @@ Topic: ${topic}
 Student's script:
 "${transcriptText}"
 
-Please analyze the script and return a structured JSON response with feedback and score for each of the following criteria:
+Pleasecript and return a structured JSON response with feedback  analyze the sand score for each of the following criteria:
 
 {
   "grammar": {
