@@ -9,5 +9,5 @@ export default defineConfig({
     react()
   
   ],
-  base: "/TOEIC-Speaking-demo",
+  base: "/TOEIC-Speaking-demo/",
 })
